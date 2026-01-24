@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "myuang",
-    "slug": "myuang",
+    "name": "PengeluaranGW",
+    "slug": "pengeluarangw",
     "version": "1.0.0",
-    "scheme": "myuang",
+    "scheme": "pengeluarangw",
     "platforms": ["ios", "android"],
     "web": {
       "bundler": "metro",
@@ -21,16 +21,18 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#00D9A3"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pengeluarangw.app"
     },
     "android": {
+      "package": "com.pengeluarangw.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#00D9A3"
       }
     }
   }

@@ -1,6 +1,7 @@
 import '@/global.css';
 
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
+import { SQLiteProvider } from 'expo-sqlite';
 
 import { ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import * as Device from 'expo-device';
@@ -14,6 +15,7 @@ import { ThemeToggle } from '@/components/nativewindui/ThemeToggle';
 import { cn } from '@/lib/cn';
 import { useColorScheme } from '@/lib/useColorScheme';
 import { NAV_THEME } from '@/theme';
+import { migrateDbIfNeeded } from '@/utils/database';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -22,29 +24,124 @@ export {
 
 const isIos26 = Platform.select({ default: false, ios: Device.osVersion?.startsWith('26.') });
 
+import * as SplashScreen from 'expo-splash-screen';
+import { useState, useEffect, useCallback } from 'react';
+import { View, ActivityIndicator, Image, Text, Animated, Easing } from 'react-native';
+
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
   const { colorScheme, isDarkColorScheme } = useColorScheme();
+  const [appIsReady, setAppIsReady] = useState(false);
+  
+  // Animation values
+  const [rotateValue] = useState(new Animated.Value(0));
+  const [bounceValue] = useState(new Animated.Value(0));
+
+  useEffect(() => {
+    // Start animations
+    const startAnimations = () => {
+      // Rotate animation (continuous)
+      Animated.loop(
+        Animated.timing(rotateValue, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start();
+
+      // Bounce animation (up and down)
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounceValue, {
+            toValue: -20, // Move up
+            duration: 1000,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounceValue, {
+            toValue: 0, // Move down
+            duration: 1000,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          })
+        ])
+      ).start();
+    };
+
+    startAnimations();
+
+    async function prepare() {
+      try {
+        // Artificially delay for 3 seconds to show off the animation
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setAppIsReady(true);
+      }
+    }
+
+    prepare();
+  }, []);
+
+  const onLayoutRootView = useCallback(async () => {
+    if (appIsReady) {
+      await SplashScreen.hideAsync();
+    }
+  }, [appIsReady]);
+
+  // Interpolate rotation
+  const spin = rotateValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg']
+  });
+
+  if (!appIsReady) {
+    return (
+      <View className="flex-1 items-center justify-center bg-[#00D9A3]">
+        <Animated.Image 
+          source={require('../assets/icon.png')} 
+          style={{ 
+            width: 150, 
+            height: 150, 
+            marginBottom: 20,
+            transform: [
+              { rotate: spin },
+              { translateY: bounceValue }
+            ]
+          }}
+          resizeMode="contain"
+        />
+        <ActivityIndicator size="large" color="#ffffff" className="mb-4" />
+        <Text className="text-white text-lg font-bold">Tunggu yaa...</Text>
+      </View>
+    );
+  }
 
   return (
-    <>
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <StatusBar
         key={`root-status-bar-${isDarkColorScheme ? 'light' : 'dark'}`}
         style={isDarkColorScheme ? 'light' : 'dark'}
       />
       {/* WRAP YOUR APP WITH ANY ADDITIONAL PROVIDERS HERE */}
-      {/* <ExampleProvider> */}
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <SQLiteProvider databaseName="myuang_clean.db" onInit={migrateDbIfNeeded}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
         <ActionSheetProvider>
           <NavThemeProvider value={NAV_THEME[colorScheme]}>
             <Stack>
-              <Stack.Screen name="index" options={INDEX_OPTIONS} />
-              <Stack.Screen name="modal" options={MODAL_OPTIONS} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="add-expense" options={{ presentation: 'modal', title: 'Tambah Pengeluaran' }} />
+              <Stack.Screen name="settings-modal" options={{ presentation: 'modal', title: 'Pengaturan' }} />
             </Stack>
           </NavThemeProvider>
         </ActionSheetProvider>
-      </GestureHandlerRootView>
-      {/* </ExampleProvider> */}
-    </>
+        </GestureHandlerRootView>
+      </SQLiteProvider>
+    </View>
   );
 }
 
@@ -57,7 +154,7 @@ const INDEX_OPTIONS = {
 
 function SettingsIcon() {
   return (
-    <Link href="/modal" asChild>
+    <Link href="/settings" asChild>
       <Pressable className={cn('opacity-80 active:opacity-50', isIos26 && 'px-1.5')}>
         <Icon name="gearshape" className="text-foreground" />
       </Pressable>
@@ -65,9 +162,4 @@ function SettingsIcon() {
   );
 }
 
-const MODAL_OPTIONS = {
-  presentation: 'modal',
-  animation: 'fade_from_bottom', // for android
-  title: 'Settings',
-  headerRight: () => <ThemeToggle />,
-} as const;
+
