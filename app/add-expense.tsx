@@ -76,9 +76,9 @@ export default function AddExpenseScreen() {
 
   return (
     <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      behavior="padding"
       className="flex-1 bg-background pt-safe"
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 40}
     >
       <Stack.Screen options={{ headerShown: false }} />
       

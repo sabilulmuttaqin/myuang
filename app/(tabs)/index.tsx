@@ -13,7 +13,7 @@ import { useColorScheme } from '@/lib/useColorScheme';
 import { SmartTextModal } from '@/components/SmartTextModal';
 import { OCRModal } from '@/components/OCRModal';
 import { ActionMenuModal } from '@/components/ActionMenuModal';
-// import { VoiceModal } from '@/components/VoiceModal';
+import { VoiceModal } from '@/components/VoiceModal';
 
 export default function Dashboard() {
   const db = useSQLiteContext();
@@ -228,7 +228,7 @@ export default function Dashboard() {
         />
         
         {/* Floating Action Button */}
-        <View className="absolute bottom-6 right-4" pointerEvents="box-none">
+        <View className="absolute right-4" style={{ bottom: insets.bottom + 24 }} pointerEvents="box-none">
             <Pressable 
                 onPress={handleFabPress}
                 className="w-14 h-14 rounded-full bg-black dark:bg-white items-center justify-center active:scale-95 shadow-lg"
@@ -260,11 +260,11 @@ export default function Dashboard() {
         visible={ocrVisible}
         onClose={() => setOCRVisible(false)}
       />
-{/* 
+
       <VoiceModal 
         visible={voiceVisible}
         onClose={() => setVoiceVisible(false)}
-      /> */}
+      />
 
       <ActionMenuModal 
         visible={menuVisible} 
