@@ -2,7 +2,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const API_KEY = 'AIzaSyCCFVQ-AidWexrJZChRLeC1c3Iamh1TWVo';
+const API_KEY = 'ngok';
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 export interface ParsedExpense {
