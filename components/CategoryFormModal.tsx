@@ -1,8 +1,9 @@
-import { View, TextInput, Modal, Pressable, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, TextInput, Modal, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { Text } from '@/components/nativewindui/Text';
 import { Icon } from '@/components/nativewindui/Icon';
 import { useState, useEffect } from 'react';
 import { COLORS } from '@/theme/colors';
+import { CustomAlertModal, AlertButton } from '@/components/CustomAlertModal';
 
 interface CategoryFormModalProps {
   visible: boolean;
@@ -22,6 +23,14 @@ export function CategoryFormModal({ visible, onClose, onSave, onDelete, initialD
   const [icon, setIcon] = useState('');
   const [color, setColor] = useState('#000000'); // Default to black as requested for simplicity or specific color
   const [isValidEmoji, setIsValidEmoji] = useState(true);
+
+  // Alert Config
+  const [alertConfig, setAlertConfig] = useState<{
+      visible: boolean;
+      title: string;
+      message: string;
+      buttons?: AlertButton[];
+  }>({ visible: false, title: '', message: '', buttons: [] });
 
   // Function to check if string contains only emoji
   const isEmoji = (str: string) => {
@@ -117,7 +126,7 @@ export function CategoryFormModal({ visible, onClose, onSave, onDelete, initialD
                             onChangeText={setName}
                             placeholder="e.g., Food, Travel"
                             placeholderTextColor="#9CA3AF"
-                            className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl px-5 py-4 text-lg font-medium text-black dark:text-white"
+                            className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl px-5 py-4 text-lg font-medium font-sans text-black dark:text-white"
                         />
                     </View>
 
@@ -140,24 +149,29 @@ export function CategoryFormModal({ visible, onClose, onSave, onDelete, initialD
                         {mode === 'edit' && onDelete && (
                             <Pressable 
                                 onPress={() => {
-                                    Alert.alert(
-                                        'Hapus Kategori',
-                                        'Kategori dan semua transaksi terkait akan dihapus. Yakin ingin melanjutkan?',
-                                        [
+                                    setAlertConfig({
+                                        visible: true,
+                                        title: 'Hapus Kategori',
+                                        message: 'Kategori dan semua transaksi terkait akan dihapus. Yakin ingin melanjutkan?',
+                                        buttons: [
                                             {
                                                 text: 'Batal',
-                                                style: 'cancel'
+                                                style: 'cancel',
+                                                onPress: () => setAlertConfig(prev => ({ ...prev, visible: false }))
                                             },
                                             {
                                                 text: 'Hapus',
                                                 style: 'destructive',
                                                 onPress: () => {
-                                                    onDelete();
-                                                    onClose();
+                                                    setAlertConfig(prev => ({ ...prev, visible: false }));
+                                                    if (onDelete) {
+                                                        onDelete();
+                                                        onClose();
+                                                    }
                                                 }
                                             }
                                         ]
-                                    );
+                                    });
                                 }}
                                 className="w-full py-4 rounded-full items-center justify-center bg-red-50 dark:bg-red-900/20"
                             >
@@ -167,6 +181,14 @@ export function CategoryFormModal({ visible, onClose, onSave, onDelete, initialD
                     </View>
                 </View>
             </View>
+
+            <CustomAlertModal
+              visible={alertConfig.visible}
+              title={alertConfig.title}
+              message={alertConfig.message}
+              buttons={alertConfig.buttons}
+              onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </KeyboardAvoidingView>
     </Modal>
   );

@@ -31,10 +31,19 @@ import { View, ActivityIndicator, Image, Text, Animated, Easing } from 'react-na
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+import { useFonts } from 'expo-font';
+
+import * as Notifications from 'expo-notifications';
+
+// ... existing imports
+
 export default function RootLayout() {
   const { colorScheme, isDarkColorScheme } = useColorScheme();
   const [appIsReady, setAppIsReady] = useState(false);
-  
+  const [fontsLoaded, fontError] = useFonts({
+    'SFPro': require('../assets/fonts/sf-pro-text-regular.otf'),
+  });
+
   // Animation values
   const [rotateValue] = useState(new Animated.Value(0));
   const [bounceValue] = useState(new Animated.Value(0));
@@ -42,7 +51,7 @@ export default function RootLayout() {
   useEffect(() => {
     // Start animations
     const startAnimations = () => {
-      // Rotate animation (continuous)
+      // ... existing animation logic
       Animated.loop(
         Animated.timing(rotateValue, {
           toValue: 1,
@@ -52,7 +61,6 @@ export default function RootLayout() {
         })
       ).start();
 
-      // Bounce animation (up and down)
       Animated.loop(
         Animated.sequence([
           Animated.timing(bounceValue, {
@@ -80,11 +88,31 @@ export default function RootLayout() {
       } catch (e) {
         console.warn(e);
       } finally {
-        setAppIsReady(true);
+        if (fontsLoaded || fontError) {
+          setAppIsReady(true);
+        }
       }
     }
 
-    prepare();
+    if (fontsLoaded || fontError) {
+      prepare();
+    }
+  }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    // Notification listeners
+    const subscription1 = Notifications.addNotificationReceivedListener(notification => {
+      console.log('Notification received:', notification);
+    });
+
+    const subscription2 = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('Notification tapped:', response);
+    });
+
+    return () => {
+      subscription1.remove();
+      subscription2.remove();
+    };
   }, []);
 
   const onLayoutRootView = useCallback(async () => {
@@ -137,7 +165,17 @@ export default function RootLayout() {
         <GestureHandlerRootView style={{ flex: 1 }}>
         <ActionSheetProvider>
           <NavThemeProvider value={NAV_THEME[colorScheme]}>
-            <Stack>
+            <Stack
+              screenOptions={{
+                headerTitleStyle: {
+                  fontFamily: 'SFPro',
+                  fontWeight: '500', // Medium weight
+                },
+                headerBackTitleStyle: {
+                  fontFamily: 'SFPro',
+                },
+              }}
+            >
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="add-expense" options={{ presentation: 'modal', title: 'Tambah Pengeluaran' }} />
               <Stack.Screen name="settings-modal" options={{ presentation: 'modal', title: 'Pengaturan' }} />

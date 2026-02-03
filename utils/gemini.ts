@@ -2,8 +2,9 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const API_KEY = 'AIzaSyCCFVQ-AidWexrJZChRLeC1c3Iamh1TWVo';
-const genAI = new GoogleGenerativeAI(API_KEY);
+const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+console.log('Gemini API Key loaded:', API_KEY ? 'Yes (' + API_KEY.length + ' chars)' : 'No');
+const genAI = new GoogleGenerativeAI(API_KEY || '');
 
 export interface ParsedExpense {
   name: string;

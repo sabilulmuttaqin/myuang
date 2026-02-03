@@ -302,7 +302,7 @@ export function SplitBillModal({ visible, onClose }: SplitBillModalProps) {
                                     <TextInput 
                                         value={billName}
                                         onChangeText={setBillName}
-                                        className="text-lg font-bold border-b border-gray-200 pb-2 text-black dark:text-white"
+                                        className="text-lg font-bold font-sans border-b border-gray-200 pb-2 text-black dark:text-white"
                                         placeholder="Contoh: Traktiran Ultah"
                                     />
                                 </View>
@@ -320,7 +320,7 @@ export function SplitBillModal({ visible, onClose }: SplitBillModalProps) {
                                                         newItems[idx].name = txt;
                                                         setItems(newItems);
                                                     }}
-                                                    className="font-medium text-black dark:text-white flex-1"
+                                                    className="font-medium font-sans text-black dark:text-white flex-1"
                                                 />
                                                 <TextInput 
                                                     value={item.amount.toString()}
@@ -330,7 +330,7 @@ export function SplitBillModal({ visible, onClose }: SplitBillModalProps) {
                                                         newItems[idx].amount = parseInt(txt) || 0;
                                                         setItems(newItems);
                                                     }}
-                                                    className="text-gray-600 dark:text-gray-400 text-right w-24"
+                                                    className="text-gray-600 dark:text-gray-400 text-right w-24 font-sans"
                                                 />
                                             </View>
                                         </View>
@@ -360,7 +360,7 @@ export function SplitBillModal({ visible, onClose }: SplitBillModalProps) {
                             <View className="flex-1 px-5 pt-4">
                                  <View className="flex-row gap-2 mb-4">
                                     <TextInput 
-                                        className="flex-1 bg-gray-100 dark:bg-gray-800 p-3 rounded-xl text-black dark:text-white"
+                                        className="flex-1 bg-gray-100 dark:bg-gray-800 p-3 rounded-xl text-black dark:text-white font-sans"
                                         placeholder="Nama Teman"
                                         placeholderTextColor="#9CA3AF"
                                         value={newFriendName}

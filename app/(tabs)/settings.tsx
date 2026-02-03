@@ -1,4 +1,4 @@
-import { View, ScrollView, Switch, Alert, Pressable, Modal, TextInput } from 'react-native';
+import { View, ScrollView, Switch, Pressable, Modal, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/nativewindui/Text';
 import { Icon } from '@/components/nativewindui/Icon';
@@ -12,7 +12,11 @@ import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useExpenseStore } from '@/store/expenseStore';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { CustomWheelPicker } from '@/components/CustomWheelPicker';
+import { CustomAlertModal, AlertButton } from '@/components/CustomAlertModal';
+
+const HOURS = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+const MINUTES = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
 const REMINDER_STORAGE_KEY = 'reminderTimes';
 
@@ -25,7 +29,16 @@ export default function SettingsScreen() {
   const [reminderTimes, setReminderTimes] = useState<ReminderTime[]>([]);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedTime, setSelectedTime] = useState(new Date());
+  const [tempTime, setTempTime] = useState(new Date()); // Untuk state sementara di modal
   const [loading, setLoading] = useState(false);
+
+  // Alert Config
+  const [alertConfig, setAlertConfig] = useState<{
+      visible: boolean;
+      title: string;
+      message: string;
+      buttons?: AlertButton[];
+  }>({ visible: false, title: '', message: '', buttons: [] });
 
   useEffect(() => {
     loadReminderTimes();
@@ -63,21 +76,27 @@ export default function SettingsScreen() {
   };
 
   const addReminderTime = () => {
-    setSelectedTime(new Date());
+    const now = new Date();
+    setSelectedTime(now);
+    setTempTime(now); // Init temp time
     setShowTimePicker(true);
   };
 
-  const handleTimeConfirm = (event: any, date?: Date) => {
-    setShowTimePicker(false);
+  const handleTimeChange = (event: any, date?: Date) => {
     if (date) {
-      const newReminder: ReminderTime = {
-        id: `reminder-${Date.now()}`,
-        hour: date.getHours(),
-        minute: date.getMinutes(),
-        enabled: true,
-      };
-      saveReminderTimes([...reminderTimes, newReminder]);
+      setTempTime(date);
     }
+  };
+
+  const saveNewReminder = () => {
+    setShowTimePicker(false);
+    const newReminder: ReminderTime = {
+      id: `reminder-${Date.now()}`,
+      hour: tempTime.getHours(),
+      minute: tempTime.getMinutes(),
+      enabled: true,
+    };
+    saveReminderTimes([...reminderTimes, newReminder]);
   };
 
   const toggleReminder = (id: string) => {
@@ -99,17 +118,17 @@ export default function SettingsScreen() {
   const exportDb = async () => {
     try {
       if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert('Error', 'Sharing is not available on this device');
+        setAlertConfig({ visible: true, title: 'Error', message: 'Sharing is not available on this device' });
         return;
       }
 
       const dbDir = FileSystem.documentDirectory + 'SQLite';
-      const dbPath = dbDir + '/myuang_clean.db';
+      const dbPath = dbDir + '/myuang_clean.db'; // ✅ FIXED: Ganti dari myuang.db
       
       const fileInfo = await FileSystem.getInfoAsync(dbPath);
       
       if (!fileInfo.exists) {
-        Alert.alert('Error', 'Database file not found');
+        setAlertConfig({ visible: true, title: 'Error', message: 'Database file not found' });
         return;
       }
 
@@ -121,7 +140,7 @@ export default function SettingsScreen() {
 
     } catch (error) {
       console.error('Export error:', error);
-      Alert.alert('Error', 'Failed to export database');
+      setAlertConfig({ visible: true, title: 'Error', message: 'Failed to export database' });
     }
   };
 
@@ -137,15 +156,17 @@ export default function SettingsScreen() {
       const pickedFile = result.assets[0];
       
       // Confirm overwrite
-      Alert.alert(
-        'Import Database',
-        'Ini akan MENGGANTI SEMUA data yang ada dengan data dari file backup. Lanjutkan?',
-        [
-          { text: 'Batal', style: 'cancel' },
+      setAlertConfig({
+        visible: true,
+        title: 'Import Database',
+        message: 'Ini akan MENGGANTI SEMUA data yang ada dengan data dari file backup. Lanjutkan?',
+        buttons: [
+          { text: 'Batal', style: 'cancel', onPress: () => setAlertConfig(prev => ({...prev, visible: false})) },
           {
             text: 'Import',
             style: 'destructive',
             onPress: async () => {
+              setAlertConfig(prev => ({...prev, visible: false})); // Close confirm modal
               try {
                 setLoading(true);
                 
@@ -158,29 +179,31 @@ export default function SettingsScreen() {
                   to: dbPath,
                 });
 
-                // Reload data from new database
-                await fetchCategories(db);
-                await fetchRecentTransactions(db);
+                // ✅ FIXED: Hapus fetchCategories & fetchRecentTransactions
+                // Karena database connection masih pakai yang lama
+                // Data baru baru akan muncul setelah restart app
 
-                Alert.alert(
-                  'Sukses',
-                  'Database berhasil diimport!',
-                  [{ text: 'OK' }]
-                );
+                // ✅ FIXED: Tambah instruksi restart app
+                setAlertConfig({
+                  visible: true,
+                  title: 'Sukses',
+                  message: 'Database berhasil diimport!\n\nSilakan TUTUP dan BUKA KEMBALI aplikasi untuk melihat data yang baru.',
+                  buttons: [{ text: 'OK', onPress: () => setAlertConfig(prev => ({...prev, visible: false})) }]
+                });
 
               } catch (err) {
                 console.error('Import error:', err);
-                Alert.alert('Error', 'Gagal import database');
+                setAlertConfig({ visible: true, title: 'Error', message: 'Gagal import database' });
               } finally {
                 setLoading(false);
               }
             }
           }
         ]
-      );
+      });
     } catch (error) {
       console.error('Document picker error:', error);
-      Alert.alert('Error', 'Failed to pick file');
+      setAlertConfig({ visible: true, title: 'Error', message: 'Failed to pick file' });
     }
   };
 
@@ -188,7 +211,7 @@ export default function SettingsScreen() {
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       {/* Header */}
       <View className="px-4 py-4 border-b border-gray-100 dark:border-gray-800 bg-background z-10">
-          <Text className="text-2xl font-bold mb-4">Settings</Text>
+          <Text className="text-2xl font-bold font-sans mb-4">Settings</Text>
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 100 }}>
@@ -200,7 +223,7 @@ export default function SettingsScreen() {
                 <View className="w-12 h-12 rounded-full bg-gray-50 dark:bg-gray-800 items-center justify-center">
                     <Icon name={colorScheme === 'dark' ? 'moon.fill' : 'sun.max.fill'} size={24} color={colorScheme === 'dark' ? 'white' : 'black'} />
                 </View>
-                <Text className="font-medium text-lg pt-1">Dark Mode</Text>
+                <Text className="font-medium font-sans text-lg pt-1">Dark Mode</Text>
             </View>
             <ThemeToggle />
         </View>
@@ -221,7 +244,7 @@ export default function SettingsScreen() {
         <View className="bg-white dark:bg-gray-900 rounded-[20px] shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
           {reminderTimes.length === 0 ? (
             <View className="p-4 items-center">
-              <Text className="text-gray-400 text-sm">Belum ada reminder. Tap + untuk menambahkan.</Text>
+              <Text className="text-gray-400 text-sm font-sans">Belum ada reminder. Tap + untuk menambahkan.</Text>
             </View>
           ) : (
             reminderTimes.map((reminder, index) => (
@@ -235,7 +258,7 @@ export default function SettingsScreen() {
                   <View className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 items-center justify-center">
                     <Icon name="bell.fill" size={18} color={reminder.enabled ? (colorScheme === 'dark' ? 'white' : 'black') : '#9CA3AF'} />
                   </View>
-                  <Text className={`text-xl font-bold ${reminder.enabled ? '' : 'text-gray-400'}`}>
+                  <Text className={`text-xl font-bold font-sans ${reminder.enabled ? '' : 'text-gray-400'}`}>
                     {formatTime(reminder.hour, reminder.minute)}
                   </Text>
                 </View>
@@ -299,16 +322,75 @@ export default function SettingsScreen() {
       </View>
     </ScrollView>
 
-    {/* Time Picker Modal */}
-    {showTimePicker && (
-      <DateTimePicker
-        value={selectedTime}
-        mode="time"
-        is24Hour={true}
-        display="spinner"
-        onChange={handleTimeConfirm}
-      />
-    )}
+    {/* Custom Time Picker Modal */}
+    <Modal
+      transparent={true}
+      visible={showTimePicker}
+      animationType="fade"
+      onRequestClose={() => setShowTimePicker(false)}
+    >
+      <View className="flex-1 justify-center items-center bg-black/50 px-6">
+        <View className="bg-white dark:bg-gray-900 w-full rounded-[32px] p-6 shadow-xl border border-gray-100 dark:border-gray-800">
+          <Text className="text-xl font-bold font-sans text-center mb-6 text-black dark:text-white">Pilih Waktu</Text>
+          
+          {/* Context Headers */}
+          <View className="flex-row w-full mb-2 justify-center gap-2">
+            <Text className="w-[80px] text-center font-medium text-xs font-sans text-gray-500 tracking-widest">JAM</Text>
+            <Text className="w-[20px]"></Text>
+            <Text className="w-[80px] text-center font-medium text-xs font-sans text-gray-500 tracking-widest">MENIT</Text>
+          </View>
+
+          {showTimePicker && (
+            <View className="flex-row justify-center items-center h-[180px] gap-2">
+               <CustomWheelPicker 
+                  data={HOURS}
+                  selectedIndex={tempTime.getHours()}
+                  onValueChange={(i) => {
+                      const d = new Date(tempTime);
+                      d.setHours(i);
+                      setTempTime(d);
+                  }}
+                  width={80}
+               />
+               <Text className="text-2xl font-bold font-sans text-black dark:text-white pb-2">:</Text>
+               <CustomWheelPicker 
+                  data={MINUTES}
+                  selectedIndex={tempTime.getMinutes()}
+                  onValueChange={(i) => {
+                      const d = new Date(tempTime);
+                      d.setMinutes(i);
+                      setTempTime(d);
+                  }}
+                  width={80}
+               />
+            </View>
+          )}
+
+          <View className="flex-row gap-3 mt-6">
+            <Pressable 
+               onPress={() => setShowTimePicker(false)}
+               className="flex-1 py-3.5 rounded-2xl bg-gray-100 dark:bg-gray-800 items-center justify-center"
+            >
+               <Text className="font-bold font-sans text-gray-900 dark:text-white">Batal</Text>
+            </Pressable>
+            <Pressable 
+               onPress={saveNewReminder}
+               className="flex-1 py-3.5 rounded-2xl bg-black dark:bg-white items-center justify-center"
+            >
+               <Text className="font-bold font-sans text-white dark:text-black">Simpan</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+    
+    <CustomAlertModal
+      visible={alertConfig.visible}
+      title={alertConfig.title}
+      message={alertConfig.message}
+      buttons={alertConfig.buttons}
+      onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+    />
     </View>
   );
 }

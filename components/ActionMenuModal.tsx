@@ -17,7 +17,7 @@ export function ActionMenuModal({ visible, onClose, onSelect }: ActionMenuModalP
   const options = [
     { id: 'manual', label: 'Input Manual', icon: 'pencil' },
     { id: 'ocr', label: 'Scan Gambar Bill', icon: 'camera.fill' },
-    { id: 'smart', label: 'Smart Text', icon: 'sparkles' },
+    { id: 'smart', label: 'Smart Text', icon: 'plus' },
     { id: 'voice', label: 'Voice Input', icon: 'mic.fill' },
   ];
 

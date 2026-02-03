@@ -46,6 +46,9 @@ module.exports = {
       borderWidth: {
         hairline: hairlineWidth(),
       },
+      fontFamily: {
+        sans: ['SFPro'],
+      },
     },
   },
   plugins: [],

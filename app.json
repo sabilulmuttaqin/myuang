@@ -2,7 +2,7 @@
   "expo": {
     "name": "myuang",
     "slug": "pengeluarangw",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "scheme": "myuang",
     "platforms": [
       "android"
@@ -16,7 +16,19 @@
           "microphonePermission": "Izinkan $(PRODUCT_NAME) mengakses mikrofon untuk input suara.",
           "speechRecognitionPermission": "Izinkan $(PRODUCT_NAME) menggunakan speech recognition untuk menambahkan pengeluaran."
         }
-      ]
+      ],
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
+      "expo-notifications"
+
     ],
     "experiments": {
       "typedRoutes": true,
@@ -40,11 +52,11 @@
     "android": {
       "package": "com.pengeluarangw.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#fefefe"
       },
-      "enableProguardInReleaseBuilds": true,
-      "enableShrinkResourcesInReleaseBuilds": true
+
+      "softwareKeyboardLayoutMode": "resize"
     },
     "extra": {
       "router": {},

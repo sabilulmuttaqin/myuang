@@ -47,7 +47,6 @@ interface ExpenseState {
   categories: Category[];
   splitBills: SplitBill[]; // New
   totalMonth: number; 
-  totalWeek: number;
   isLoading: boolean;
   
   fetchCategories: (db: SQLiteDatabase) => Promise<void>;
@@ -55,7 +54,6 @@ interface ExpenseState {
   addCategory: (db: SQLiteDatabase, category: Omit<Category, 'id'>) => Promise<void>;
   fetchRecentTransactions: (db: SQLiteDatabase) => Promise<void>;
   calculateTotalMonth: (db: SQLiteDatabase, selectedMonth?: Date) => Promise<void>;
-  calculateWeeklyTotal: (db: SQLiteDatabase, selectedMonth?: Date) => Promise<void>;
   updateCategory: (db: SQLiteDatabase, id: number, category: Partial<Category>) => Promise<void>;
   deleteCategory: (db: SQLiteDatabase, id: number) => Promise<void>;
   deleteTransaction: (db: SQLiteDatabase, id: number) => Promise<void>;
@@ -71,7 +69,6 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
   categories: [],
   splitBills: [],
   totalMonth: 0,
-  totalWeek: 0,
   isLoading: false,
 
   fetchCategories: async (db) => {
@@ -105,7 +102,6 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
       // Refresh list
       await get().fetchRecentTransactions(db);
       await get().calculateTotalMonth(db);
-      await get().calculateWeeklyTotal(db);
     } catch (error) {
       console.error('Error adding expense:', error);
     } finally {
@@ -169,27 +165,6 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     }
   },
 
-  calculateWeeklyTotal: async (db, selectedMonth) => {
-    try {
-        // Use selectedMonth or default to current date  
-        const targetDate = selectedMonth || new Date();
-        const yearMonth = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
-        
-        // Calculate total for the last 7 days within the selected month
-        // For a selected month, we show the total for that entire month instead of "weekly"
-        // This makes more sense when viewing historical months
-        const result = await db.getFirstAsync<{ total: number }>(`
-            SELECT SUM(amount) as total 
-            FROM transactions 
-            WHERE strftime('%Y-%m', date) = ?
-        `, [yearMonth]);
-        
-        set({ totalWeek: result?.total || 0 });
-    } catch (error) {
-         console.error('Error calculating weekly total:', error);
-    }
-  },
-
   updateCategory: async (db, id, category) => {
       try {
           await db.runAsync(
@@ -222,7 +197,6 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
       // Refresh all related data
       await get().fetchRecentTransactions(db);
       await get().calculateTotalMonth(db);
-      await get().calculateWeeklyTotal(db);
     } catch (error) {
       console.error('Error deleting transaction:', error);
     }

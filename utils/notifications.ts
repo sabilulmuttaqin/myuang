@@ -49,8 +49,8 @@ export async function scheduleReminderAtTime(hour: number, minute: number, id: s
   await Notifications.scheduleNotificationAsync({
     identifier: id,
     content: {
-      title: "Jangan lupa catat pengeluaran! 📝",
-      body: "Sudah catat pengeluaran hari ini?",
+      title: "WOYYYYYYY!",
+      body: "Barusan beli sesuatu ya? Jangan lupa dicatat, breeee. 📝",
       data: { type: 'daily-reminder', id },
     },
     trigger: {
@@ -85,24 +85,6 @@ export async function cancelAllReminders() {
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
-// Legacy functions for backward compatibility
-export async function scheduleDailyReminder() {
-  await Notifications.cancelAllScheduledNotificationsAsync();
-  
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: "Jangan lupa catat pengeluaran! 📝",
-      body: "Sudah catat pengeluaran hari ini?",
-      data: { type: 'daily-reminder' },
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour: 20,
-      minute: 0,
-      repeats: true,
-    },
-  });
-}
 
 export async function cancelDailyReminder() {
   await Notifications.cancelAllScheduledNotificationsAsync();

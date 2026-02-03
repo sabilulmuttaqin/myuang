@@ -1,4 +1,4 @@
-import { View, FlatList, Pressable, Alert, ScrollView } from 'react-native';
+import { View, FlatList, Pressable, Alert, ScrollView, Modal, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/nativewindui/Text';
 import { useExpenseStore, Transaction } from '@/store/expenseStore';
@@ -7,8 +7,17 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Icon } from '@/components/nativewindui/Icon';
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { id } from 'date-fns/locale';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { CustomWheelPicker } from '@/components/CustomWheelPicker';
+
+const START_YEAR = 2020;
+const YEARS = Array.from({ length: 30 }, (_, i) => (START_YEAR + i).toString());
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+const getDaysInMonth = (month: number, year: number) => {
+  return new Date(year, month + 1, 0).getDate();
+};
 import { useColorScheme } from '@/lib/useColorScheme';
+import { CustomAlertModal, AlertButton } from '@/components/CustomAlertModal';
 
 export default function AnalysisScreen() {
   const db = useSQLiteContext();
@@ -23,8 +32,16 @@ export default function AnalysisScreen() {
     return d;
   });
   const [endDate, setEndDate] = useState(new Date());
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null);
+  const [tempDate, setTempDate] = useState(new Date());
+
+  // Alert State
+  const [alertConfig, setAlertConfig] = useState<{
+      visible: boolean;
+      title: string;
+      message: string;
+      buttons: AlertButton[];
+  }>({ visible: false, title: '', message: '', buttons: [] });
 
   useEffect(() => {
     fetchRecentTransactions(db);
@@ -58,22 +75,28 @@ export default function AnalysisScreen() {
       .sort((a, b) => b.total - a.total);
   }, [filteredData]);
 
-  const handleDeleteTransaction = useCallback(async (id: number, note: string) => {
-    Alert.alert(
-      "Hapus Transaksi",
-      `Yakin ingin menghapus transaksi "${note}"?`,
-      [
-        { text: "Batal", style: "cancel" },
-        { 
-          text: "Hapus", 
-          style: "destructive", 
-          onPress: async () => {
-            await deleteTransaction(db, id);
-            fetchRecentTransactions(db);
+  const handleDeleteTransaction = useCallback((id: number, note: string) => {
+    setAlertConfig({
+       visible: true,
+       title: "Hapus Transaksi",
+       message: `Yakin ingin menghapus transaksi "${note}"?`,
+       buttons: [
+          { 
+             text: "Batal", 
+             style: "cancel", 
+             onPress: () => setAlertConfig(prev => ({ ...prev, visible: false })) 
+          },
+          { 
+            text: "Hapus", 
+            style: "destructive", 
+            onPress: async () => {
+               setAlertConfig(prev => ({ ...prev, visible: false }));
+               await deleteTransaction(db, id);
+               fetchRecentTransactions(db);
+            }
           }
-        }
-      ]
-    );
+       ]
+    });
   }, [db, deleteTransaction, fetchRecentTransactions]);
 
   const renderTransaction = useCallback(({ item }: { item: Transaction }) => (
@@ -83,7 +106,7 @@ export default function AnalysisScreen() {
       {/* Emoji Circle */}
       <View className="w-12 h-12 rounded-full items-center justify-center bg-gray-50 dark:bg-gray-800">
         {item.category_icon?.startsWith('emoji:') ? (
-          <Text className="text-xl">{item.category_icon.replace('emoji:', '')}</Text>
+          <Text className="text-xl font-sans">{item.category_icon.replace('emoji:', '')}</Text>
         ) : (
           <Icon name="circle.fill" size={24} color="gray" />
         )}
@@ -91,14 +114,14 @@ export default function AnalysisScreen() {
 
       {/* Transaction Info */}
       <View className="flex-1">
-        <Text className="font-bold text-[17px] mb-0.5">{item.note || 'No note'}</Text>
-        <Text className="text-gray-500 text-[16px]">{item.category_name}</Text>
-        <Text className="text-gray-400 text-[14px] mt-1">{format(parseISO(item.date), 'dd MMM yyyy', { locale: id })}</Text>
+        <Text className="font-bold font-sans text-[17px] mb-0.5">{item.note || 'No note'}</Text>
+        <Text className="text-gray-500 font-sans text-[16px]">{item.category_name}</Text>
+        <Text className="text-gray-400 font-sans text-[14px] mt-1">{format(parseISO(item.date), 'dd MMM yyyy', { locale: id })}</Text>
       </View>
 
       {/* Amount & Delete */}
       <View className="items-end gap-2">
-        <Text className="font-bold text-[18px]">-Rp {item.amount.toLocaleString('id-ID')}</Text>
+        <Text className="font-bold font-sans text-[18px]">-Rp {item.amount.toLocaleString('id-ID')}</Text>
         
         {/* Delete Button */}
         <Pressable 
@@ -118,7 +141,7 @@ export default function AnalysisScreen() {
 
       {/* Breakdown Cards */}
       <View className="mb-6">
-        <Text variant="title3" className="font-bold mb-4">Breakdown</Text>
+        <Text variant="title3" className="font-bold font-sans mb-4">Breakdown</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row -mx-5 px-5" contentContainerStyle={{ paddingRight: 20 }}>
           {categoryBreakdown.map((item) => (
             <View key={item.name} className="mr-3">
@@ -137,14 +160,14 @@ export default function AnalysisScreen() {
                 
                 {/* Info */}
                 <View className="w-full items-center">
-                  <Text className="text-gray-500 dark:text-gray-400 text-sm mb-0.5" numberOfLines={1}>{item.name}</Text>
-                  <Text className="text-gray-900 dark:text-white text-base font-bold">Rp {(item.total / 1000).toFixed(0)}k</Text>
+                  <Text className="text-gray-500 dark:text-gray-400 text-sm font-sans mb-0.5" numberOfLines={1}>{item.name}</Text>
+                  <Text className="text-gray-900 dark:text-white text-base font-bold font-sans">Rp {(item.total / 1000).toFixed(0)}k</Text>
                 </View>
               </View>
               
               {/* Percentage Card - attached below */}
               <View className="w-28 py-2 rounded-b-[24px] bg-black dark:bg-white items-center justify-center">
-                <Text className="text-white dark:text-black font-bold text-sm">{((item.total / (totalFiltered || 1)) * 100).toFixed(0)}%</Text>
+                <Text className="text-white dark:text-black font-bold text-sm font-sans">{((item.total / (totalFiltered || 1)) * 100).toFixed(0)}%</Text>
               </View>
             </View>
           ))}
@@ -155,7 +178,7 @@ export default function AnalysisScreen() {
       </View>
 
       {/* All Transactions Header */}
-      <Text variant="title3" className="font-bold mb-4">All Transactions</Text>
+      <Text variant="title3" className="font-bold font-sans mb-4">All Transactions</Text>
     </View>
   ), [categoryBreakdown, totalFiltered, filteredData.length]);
   
@@ -163,26 +186,32 @@ export default function AnalysisScreen() {
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       {/* Header with Date Range */}
       <View className="px-4 py-4 border-b dark:border-gray-800 border-gray-200 bg-background z-10">
-        <Text className="text-2xl font-bold mb-4">Analytic</Text>
+        <Text className="text-2xl font-bold font-sans mb-4">Analytic</Text>
         
         {/* Date Range Picker - Pill Style */}
         <View className="flex-row items-center justify-center gap-3">
           <Pressable 
-            onPress={() => setShowStartPicker(true)}
+            onPress={() => {
+              setTempDate(startDate);
+              setActivePicker('start');
+            }}
             className="flex-row items-center bg-white dark:bg-gray-800 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700"
           >
             <Icon name="calendar" size={16} color={colorScheme === 'dark' ? 'white' : 'black'} />
-            <Text className="ml-2 font-medium">{format(startDate, 'dd MMM yyyy', { locale: id })}</Text>
+            <Text className="ml-2 font-medium font-sans">{format(startDate, 'dd MMM yyyy', { locale: id })}</Text>
           </Pressable>
 
           <Text className="text-gray-400">—</Text>
 
           <Pressable 
-            onPress={() => setShowEndPicker(true)}
+            onPress={() => {
+              setTempDate(endDate);
+              setActivePicker('end');
+            }}
             className="flex-row items-center bg-white dark:bg-gray-800 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700"
           >
             <Icon name="calendar" size={16} color={colorScheme === 'dark' ? 'white' : 'black'} />
-            <Text className="ml-2 font-medium">{format(endDate, 'dd MMM yyyy', { locale: id })}</Text>
+            <Text className="ml-2 font-medium font-sans">{format(endDate, 'dd MMM yyyy', { locale: id })}</Text>
           </Pressable>
         </View>
       </View>
@@ -200,30 +229,105 @@ export default function AnalysisScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
       />
 
-      {/* Date Pickers */}
-      {showStartPicker && (
-        <DateTimePicker
-          value={startDate}
-          mode="date"
-          display="spinner"
-          onChange={(event, date) => {
-            setShowStartPicker(false);
-            if (date) setStartDate(date);
-          }}
-        />
-      )}
+      {/* Custom Date Picker Modal */}
+      <Modal
+        transparent={true}
+        visible={activePicker !== null}
+        animationType="fade"
+        onRequestClose={() => setActivePicker(null)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50 px-6">
+          <View className="bg-white dark:bg-gray-900 w-full rounded-[32px] p-6 shadow-xl border border-gray-100 dark:border-gray-800">
+            <Text className="text-xl font-bold font-sans text-center mb-6 text-black dark:text-white">
+                {activePicker === 'start' ? 'Mulai Tanggal' : 'Sampai Tanggal'}
+            </Text>
+            
+            {/* Context Headers */}
+            <View className="flex-row w-full mb-2 justify-center gap-2">
+              <Text className="w-[60px] text-center font-medium text-xs font-sans text-gray-500 tracking-widest">TGL</Text>
+              <Text className="w-[100px] text-center font-medium text-xs font-sans text-gray-500 tracking-widest">BULAN</Text>
+              <Text className="w-[80px] text-center font-medium text-xs font-sans text-gray-500 tracking-widest">TAHUN</Text>
+            </View>
 
-      {showEndPicker && (
-        <DateTimePicker
-          value={endDate}
-          mode="date"
-          display="spinner"
-          onChange={(event, date) => {
-            setShowEndPicker(false);
-            if (date) setEndDate(date);
-          }}
-        />
-      )}
+            {activePicker !== null && (
+                <View className="flex-row justify-center items-center h-[180px] gap-2">
+                    {/* Day */}
+                    <CustomWheelPicker 
+                        key={`day-${tempDate.getMonth()}-${tempDate.getFullYear()}`}
+                        data={Array.from({ length: getDaysInMonth(tempDate.getMonth(), tempDate.getFullYear()) }, (_, i) => (i + 1).toString())}
+                        selectedIndex={tempDate.getDate() - 1}
+                        onValueChange={(i) => {
+                            const d = new Date(tempDate);
+                            d.setDate(i + 1);
+                            setTempDate(d);
+                        }}
+                        width={60}
+                    />
+                    {/* Month */}
+                    <CustomWheelPicker 
+                        data={MONTHS}
+                        selectedIndex={tempDate.getMonth()}
+                        onValueChange={(i) => {
+                            const d = new Date(tempDate);
+                            const newMonth = i;
+                            const maxDays = getDaysInMonth(newMonth, d.getFullYear());
+                            const currentDay = d.getDate();
+                            d.setDate(1); 
+                            d.setMonth(newMonth);
+                            d.setDate(Math.min(currentDay, maxDays));
+                            setTempDate(d);
+                        }}
+                        width={100}
+                    />
+                    {/* Year */}
+                    <CustomWheelPicker 
+                        data={YEARS}
+                        selectedIndex={tempDate.getFullYear() - START_YEAR}
+                        onValueChange={(i) => {
+                           const d = new Date(tempDate);
+                           const newYear = START_YEAR + i;
+                           const currentMonth = d.getMonth();
+                           const maxDays = getDaysInMonth(currentMonth, newYear);
+                           const currentDay = d.getDate();
+                           d.setDate(1);
+                           d.setFullYear(newYear);
+                           d.setDate(Math.min(currentDay, maxDays));
+                           setTempDate(d);
+                        }}
+                        width={80}
+                    />
+                </View>
+            )}
+
+            <View className="flex-row gap-3 mt-6">
+              <Pressable 
+                 onPress={() => setActivePicker(null)}
+                 className="flex-1 py-3.5 rounded-2xl bg-gray-100 dark:bg-gray-800 items-center justify-center"
+              >
+                 <Text className="font-bold font-sans text-gray-900 dark:text-white">Batal</Text>
+              </Pressable>
+              <Pressable 
+                 onPress={() => {
+                    if (activePicker === 'start') setStartDate(tempDate);
+                    if (activePicker === 'end') setEndDate(tempDate);
+                    setActivePicker(null);
+                 }}
+                 className="flex-1 py-3.5 rounded-2xl bg-black dark:bg-white items-center justify-center"
+              >
+                 <Text className="font-bold font-sans text-white dark:text-black">Pilih</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      {/* Custom Alert Modal */}
+      <CustomAlertModal
+          visible={alertConfig.visible}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          buttons={alertConfig.buttons}
+          onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 }

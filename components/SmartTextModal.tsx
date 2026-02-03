@@ -126,7 +126,7 @@ export function SmartTextModal({ visible, onClose }: SmartTextModalProps) {
             onChangeText={setInput}
             placeholder="e.g., Nasi goreng 15rb"
             placeholderTextColor="#9CA3AF"
-            className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-5 py-4 text-lg font-medium mb-6 text-black dark:text-white"
+            className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-5 py-4 text-lg font-medium font-sans mb-6 text-black dark:text-white"
             autoFocus
             editable={!loading}
           />
