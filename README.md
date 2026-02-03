@@ -1,6 +1,4 @@
-MyUang 💸
-
-**PengeluaranGW** is a smart, offline-first personal expense tracker designed for speed and simplicity. Built with React Native and Expo, it leverages AI to make tracking your spending effortless.
+**myuang** is a smart, offline-first personal expense tracker designed for speed and simplicity. Built with React Native and Expo, it leverages AI to make tracking your spending effortless.
 
 ## 🚀 Features
 
