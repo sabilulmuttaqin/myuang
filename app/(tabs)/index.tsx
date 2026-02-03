@@ -222,7 +222,7 @@ export default function Dashboard() {
               </View>
 
               <View className="items-end">
-                  <Text className="font-bold text-base">-Rp {item.amount.toLocaleString('id-ID')}</Text>
+                  <Text className="font-bold text-[18px]">-Rp {item.amount.toLocaleString('id-ID')}</Text>
               </View>
             </View>
           )}

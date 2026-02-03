@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "PengeluaranGW",
-    "slug": "pengeluarangw",
+    "name": "myuang",
+    "slug": "myuang",
     "version": "1.0.0",
-    "scheme": "pengeluarangw",
+    "scheme": "myuang",
     "platforms": [
       "android"
     ],

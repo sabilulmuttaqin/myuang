@@ -98,14 +98,14 @@ export default function AnalysisScreen() {
 
       {/* Amount & Delete */}
       <View className="items-end gap-2">
-        <Text className="font-bold text-base">-Rp {item.amount.toLocaleString('id-ID')}</Text>
+        <Text className="font-bold text-[18px]">-Rp {item.amount.toLocaleString('id-ID')}</Text>
         
         {/* Delete Button */}
         <Pressable 
           onPress={() => handleDeleteTransaction(item.id, item.note || 'transaksi ini')}
           className="p-1"
         >
-          <Icon name="trash" size={14} color="#EF4444" />
+          <Icon name="trash" size={18} color="#EF4444" />
         </Pressable>
       </View>
     </View>
@@ -121,24 +121,30 @@ export default function AnalysisScreen() {
         <Text variant="title3" className="font-bold mb-4">Breakdown</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row -mx-5 px-5" contentContainerStyle={{ paddingRight: 20 }}>
           {categoryBreakdown.map((item) => (
-            <View 
-              key={item.name} 
-              className="w-28 h-36 p-3 rounded-[24px] flex-col items-center justify-between bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm mr-3"
-            >
-              {/* Emoji - smaller */}
-              <View className="flex-1 items-center justify-center">
-                {item.icon?.startsWith('emoji:') ? (
-                  <Text className="text-3xl">{item.icon.replace('emoji:', '')}</Text>
-                ) : (
-                  <Icon name="circle.fill" size={28} color="gray" />
-                )}
+            <View key={item.name} className="mr-3">
+              {/* Main Category Card */}
+              <View 
+                className="w-28 h-32 p-3 rounded-t-[24px] flex-col items-center justify-between bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 border-b-0 shadow-sm"
+              >
+                {/* Emoji - smaller */}
+                <View className="flex-1 items-center justify-center">
+                  {item.icon?.startsWith('emoji:') ? (
+                    <Text className="text-3xl">{item.icon.replace('emoji:', '')}</Text>
+                  ) : (
+                    <Icon name="circle.fill" size={28} color="gray" />
+                  )}
+                </View>
+                
+                {/* Info */}
+                <View className="w-full items-center">
+                  <Text className="text-gray-500 dark:text-gray-400 text-sm mb-0.5" numberOfLines={1}>{item.name}</Text>
+                  <Text className="text-gray-900 dark:text-white text-base font-bold">Rp {(item.total / 1000).toFixed(0)}k</Text>
+                </View>
               </View>
               
-              {/* Info at bottom - better hierarchy */}
-              <View className="w-full items-center">
-                <Text className="text-gray-500 dark:text-gray-400 text-[11px] mb-0.5" numberOfLines={1}>{item.name}</Text>
-                <Text className="text-gray-900 dark:text-white text-base font-bold">Rp {(item.total / 1000).toFixed(0)}k</Text>
-                <Text className="text-gray-400 text-[10px]">{((item.total / (totalFiltered || 1)) * 100).toFixed(0)}%</Text>
+              {/* Percentage Card - attached below */}
+              <View className="w-28 py-2 rounded-b-[24px] bg-black dark:bg-white items-center justify-center">
+                <Text className="text-white dark:text-black font-bold text-sm">{((item.total / (totalFiltered || 1)) * 100).toFixed(0)}%</Text>
               </View>
             </View>
           ))}

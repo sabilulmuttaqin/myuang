@@ -158,9 +158,13 @@ export default function SettingsScreen() {
                   to: dbPath,
                 });
 
+                // Reload data from new database
+                await fetchCategories(db);
+                await fetchRecentTransactions(db);
+
                 Alert.alert(
                   'Sukses',
-                  'Database berhasil diimport! Restart app untuk melihat perubahan.',
+                  'Database berhasil diimport!',
                   [{ text: 'OK' }]
                 );
 
@@ -237,7 +241,7 @@ export default function SettingsScreen() {
                 </View>
                 <View className="flex-row items-center gap-3">
                   <Pressable onPress={() => deleteReminder(reminder.id)} hitSlop={10}>
-                    <Icon name="trash" size={16} color="#EF4444" />
+                    <Icon name="trash" size={18} color="#EF4444" />
                   </Pressable>
                   <Switch
                     value={reminder.enabled}

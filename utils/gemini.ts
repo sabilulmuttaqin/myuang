@@ -61,7 +61,6 @@ export async function parseExpenseImage(imageUri: string, availableCategories: s
     let finalBase64 = base64Data;
     
     if (!finalBase64) {
-        console.log('No base64 provided, attempting FileSystem read...');
         try {
             finalBase64 = await FileSystem.readAsStringAsync(imageUri, {
                 encoding: 'base64',
@@ -121,7 +120,7 @@ PENTING: Hanya return JSON saja, tanpa penjelasan tambahan.`;
     const result = await model.generateContent([prompt, imagePart]);
     const text = result.response.text();
     
-    console.log('Gemini OCR response:', text);
+
     
     // Try to extract JSON
     let jsonMatch = text.match(/\[[\s\S]*?\]/); // Try array first
