@@ -9,14 +9,16 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useActionSheet } from '@expo/react-native-action-sheet';
+import { useColorScheme } from '@/lib/useColorScheme';
 
 export default function AddExpenseScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
   const { categories, addExpense, fetchCategories } = useExpenseStore();
   const { showActionSheetWithOptions } = useActionSheet();
+  const { colorScheme } = useColorScheme();
   
-  const [amount, setAmount] = useState('0');
+  const [amount, setAmount] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [date, setDate] = useState(new Date());
   const [expenseName, setExpenseName] = useState('');
@@ -28,7 +30,7 @@ export default function AddExpenseScreen() {
   }, [db]);
 
   const handleSubmit = async () => {
-    if (!amount || amount === '0' || !selectedCategory) return;
+    if (!amount || amount === '' || !selectedCategory) return;
     
     setLoading(true);
     try {
@@ -70,7 +72,7 @@ export default function AddExpenseScreen() {
       {/* Custom Header */}
       <View className="flex-row items-center justify-between px-4 py-4">
           <Pressable onPress={() => router.back()} className="p-2">
-              <Icon name="arrow.left" size={24} color="black" />
+              <Icon name="arrow.left" size={24} color={colorScheme === 'dark' ? 'white' : 'black'} />
           </Pressable>
 
           <Text className="text-lg font-semibold">New Expense</Text>
@@ -92,13 +94,13 @@ export default function AddExpenseScreen() {
                  <Text className="text-gray-400 text-lg">IDR</Text>
             </View>
             <TextInput
-              className="text-6xl font-bold text-center w-full"
+              className="text-6xl font-bold text-center w-full text-black dark:text-white"
               style={{ textAlign: 'center' }}
               keyboardType="numeric"
               value={amount}
               onChangeText={setAmount}
               placeholder="0"
-              placeholderTextColor="#D1D5DB"
+              placeholderTextColor="#9CA3AF"
             />
         </View>
 
@@ -108,7 +110,7 @@ export default function AddExpenseScreen() {
                 onPress={() => setShowDatePicker(true)}
                 className="flex-row items-center bg-white dark:bg-gray-800 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700"
             >
-                <Icon name="calendar" size={16} color="black" />
+                <Icon name="calendar" size={16} color={colorScheme === 'dark' ? 'white' : 'black'} />
                 <Text className="ml-2 font-medium">
                     {format(date, 'dd MMM yyyy', { locale: id })}
                 </Text>
@@ -122,8 +124,9 @@ export default function AddExpenseScreen() {
             <View>
                 <Text className="text-base font-semibold mb-2 ml-1 text-gray-900 dark:text-gray-100">Expense Name</Text>
                 <TextInput 
-                    className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-4 text-base"
+                    className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-4 text-base text-black dark:text-white"
                     placeholder="e.g. Nasi Goreng"
+                    placeholderTextColor="#9CA3AF"
                     value={expenseName}
                     onChangeText={setExpenseName}
                 />

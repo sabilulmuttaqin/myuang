@@ -12,6 +12,13 @@ Notifications.setNotificationHandler({
   }),
 });
 
+export interface ReminderTime {
+  id: string;
+  hour: number;
+  minute: number;
+  enabled: boolean;
+}
+
 export async function requestPermissions() {
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
@@ -37,11 +44,51 @@ export async function requestPermissions() {
   return true;
 }
 
-export async function scheduleDailyReminder() {
-  // Cancel existing notifications
+// Schedule a single reminder at specific time
+export async function scheduleReminderAtTime(hour: number, minute: number, id: string) {
+  await Notifications.scheduleNotificationAsync({
+    identifier: id,
+    content: {
+      title: "Jangan lupa catat pengeluaran! 📝",
+      body: "Sudah catat pengeluaran hari ini?",
+      data: { type: 'daily-reminder', id },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+      repeats: true,
+    },
+  });
+}
+
+// Cancel a specific reminder by ID
+export async function cancelReminderById(id: string) {
+  await Notifications.cancelScheduledNotificationAsync(id);
+}
+
+// Schedule multiple reminders (cancel all first, then schedule enabled ones)
+export async function scheduleMultipleReminders(times: ReminderTime[]) {
+  // Cancel all existing
   await Notifications.cancelAllScheduledNotificationsAsync();
   
-  // Schedule daily reminder at 8 PM
+  // Schedule only enabled ones
+  for (const time of times) {
+    if (time.enabled) {
+      await scheduleReminderAtTime(time.hour, time.minute, time.id);
+    }
+  }
+}
+
+// Cancel all reminders
+export async function cancelAllReminders() {
+  await Notifications.cancelAllScheduledNotificationsAsync();
+}
+
+// Legacy functions for backward compatibility
+export async function scheduleDailyReminder() {
+  await Notifications.cancelAllScheduledNotificationsAsync();
+  
   await Notifications.scheduleNotificationAsync({
     content: {
       title: "Jangan lupa catat pengeluaran! 📝",
@@ -63,6 +110,5 @@ export async function cancelDailyReminder() {
 
 // Check if user has added expense today
 export async function shouldSendReminder(hasExpenseToday: boolean): Promise<boolean> {
-  // Only send reminder if user hasn't added expense today
   return !hasExpenseToday;
 }

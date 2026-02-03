@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { parseExpenseImage } from '@/utils/gemini';
 import { useExpenseStore } from '@/store/expenseStore';
 import { useSQLiteContext } from 'expo-sqlite';
+import { useColorScheme } from '@/lib/useColorScheme';
 
 interface OCRModalProps {
   visible: boolean;
@@ -14,9 +15,11 @@ interface OCRModalProps {
 
 export function OCRModal({ visible, onClose }: OCRModalProps) {
   const [image, setImage] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { categories, addExpense } = useExpenseStore();
   const db = useSQLiteContext();
+  const { colorScheme } = useColorScheme();
 
   const pickImage = async (useCamera: boolean) => {
     try {
@@ -41,17 +44,20 @@ export function OCRModal({ visible, onClose }: OCRModalProps) {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             quality: 0.9,
+            base64: true,
             exif: false,
           })
         : await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             quality: 0.9,
+            base64: true,
             exif: false,
           });
 
       if (!result.canceled && result.assets[0]) {
         setImage(result.assets[0].uri);
+        setImageBase64(result.assets[0].base64 || null);
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -66,7 +72,9 @@ export function OCRModal({ visible, onClose }: OCRModalProps) {
     try {
       // Get category names from DB
       const categoryNames = categories.map(c => c.name);
-      const results = await parseExpenseImage(image, categoryNames, true); // Enable split
+      
+      // Pass base64 if available to avoid FileSystem read issues
+      const results = await parseExpenseImage(image, categoryNames, true, imageBase64); 
       
       if (!results || results.length === 0) {
         Alert.alert('Gagal Parse', 'Tidak bisa membaca struk. Pastikan foto jelas dan ada informasi total.');
@@ -137,7 +145,8 @@ export function OCRModal({ visible, onClose }: OCRModalProps) {
       visible={visible}
       onRequestClose={handleClose}
     >
-      <View className="flex-1 justify-end bg-black/40">
+      <View className="flex-1 justify-end">
+        <Pressable className="absolute inset-0 bg-black/40" onPress={handleClose} />
         <View className="bg-white dark:bg-gray-900 rounded-t-[32px] p-6 pb-10 h-[85%]">
           {/* Header */}
           <View className="flex-row justify-between items-center mb-6">
@@ -184,7 +193,7 @@ export function OCRModal({ visible, onClose }: OCRModalProps) {
                 onPress={() => pickImage(true)}
                 className="w-full py-4 rounded-full items-center justify-center bg-black dark:bg-white flex-row gap-2"
               >
-                <Icon name="camera.fill" size={20} color="white" className="dark:color-black" />
+              <Icon name="camera.fill" size={20} color={colorScheme === 'dark' ? 'black' : 'white'} />
                 <Text className="font-bold text-lg text-white dark:text-black">
                   Take Photo
                 </Text>
@@ -194,7 +203,7 @@ export function OCRModal({ visible, onClose }: OCRModalProps) {
                 onPress={() => pickImage(false)}
                 className="w-full py-4 rounded-full items-center justify-center bg-gray-200 dark:bg-gray-700 flex-row gap-2"
               >
-                <Icon name="photo.fill" size={20} color="black" className="dark:color-white" />
+                <Icon name="photo.fill" size={20} color={colorScheme === 'dark' ? 'white' : 'black'} />
                 <Text className="font-bold text-lg text-gray-700 dark:text-gray-200">
                   Choose from Gallery
                 </Text>

@@ -4,16 +4,27 @@
     "slug": "pengeluarangw",
     "version": "1.0.0",
     "scheme": "pengeluarangw",
-    "platforms": ["ios", "android"],
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/favicon.png"
-    },
-    "plugins": ["expo-router", "@react-native-community/datetimepicker"],
+    "platforms": [
+      "android"
+    ],
+    "plugins": [
+      "expo-router",
+      "@react-native-community/datetimepicker",
+      [
+        "@jamsch/expo-speech-recognition",
+        {
+          "microphonePermission": "Izinkan $(PRODUCT_NAME) mengakses mikrofon untuk input suara.",
+          "speechRecognitionPermission": "Izinkan $(PRODUCT_NAME) menggunakan speech recognition untuk menambahkan pengeluaran."
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true,
       "tsconfigPaths": true
+    },
+    "jsEngine": "hermes",
+    "updates": {
+      "enabled": false
     },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,18 +32,24 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#00D9A3"
+      "backgroundColor": "#fefefe"
     },
-    "assetBundlePatterns": ["**/*"],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.pengeluarangw.app"
-    },
+    "assetBundlePatterns": [
+      "assets/*"
+    ],
     "android": {
       "package": "com.pengeluarangw.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#00D9A3"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#fefefe"
+      },
+      "enableProguardInReleaseBuilds": true,
+      "enableShrinkResourcesInReleaseBuilds": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "355673e1-b7b5-498b-9618-cca9f916d527"
       }
     }
   }

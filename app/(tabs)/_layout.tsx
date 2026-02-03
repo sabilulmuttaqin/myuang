@@ -1,72 +1,12 @@
 import { Tabs } from 'expo-router';
-import { View, Pressable, Platform, Alert } from 'react-native';
+import { View, Platform } from 'react-native';
 import { Icon } from '@/components/nativewindui/Icon';
 import { useColorScheme } from '@/lib/useColorScheme';
-import { COLORS } from '@/theme/colors';
-import { router } from 'expo-router';
-import { useActionSheet } from '@expo/react-native-action-sheet';
-import { SmartTextModal } from '@/components/SmartTextModal';
-import { OCRModal } from '@/components/OCRModal';
-import { SplitBillModal } from '@/components/SplitBillModal';
-import { useNetworkStatus } from '@/utils/network';
-import { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
-  const { colors, colorScheme } = useColorScheme();
-  const { showActionSheetWithOptions } = useActionSheet();
-  const { isOnline } = useNetworkStatus();
-  const [smartTextVisible, setSmartTextVisible] = useState(false);
-  const [ocrVisible, setOCRVisible] = useState(false);
-  const [splitBillVisible, setSplitBillVisible] = useState(false);
-
-  const handleFabPress = () => {
-    const options = ['Input Manual', 'Scan Gambar Bill', 'Smart Text', 'Split Bill', 'Batal'];
-    const destructiveButtonIndex = -1; // No destructive option
-    const cancelButtonIndex = 4;
-
-    showActionSheetWithOptions(
-      {
-        options,
-        cancelButtonIndex,
-        destructiveButtonIndex,
-        containerStyle: {
-            backgroundColor: colorScheme === 'dark' ? '#1c1c1e' : '#ffffff',
-        },
-        textStyle: {
-            color: colorScheme === 'dark' ? '#ffffff' : '#000000',
-        },
-        title: 'Tambah Pengeluaran',
-        message: 'Pilih metode input yang diinginkan',
-      },
-      (selectedIndex) => {
-        switch (selectedIndex) {
-          case 0: // Input Manual
-             router.push('/add-expense');
-             break;
-          case 1: // Scan OCR
-             if (!isOnline) {
-               Alert.alert('Offline', 'Fitur OCR memerlukan koneksi internet.');
-               return;
-             }
-             setOCRVisible(true);
-             break;
-          case 2: // Smart Text
-             if (!isOnline) {
-               Alert.alert('Offline', 'Fitur Smart Text memerlukan koneksi internet.');
-               return;
-             }
-             setSmartTextVisible(true);
-             break;
-          case 3: // Split Bill
-             setSplitBillVisible(true);
-             break;
-          case cancelButtonIndex:
-            // Canceled
-            break;
-        }
-      }
-    );
-  };
+  const { colorScheme } = useColorScheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <View className="flex-1">
@@ -77,11 +17,11 @@ export default function TabLayout() {
                   backgroundColor: colorScheme === 'dark' ? '#000000' : '#ffffff',
                   borderTopWidth: 0, 
                   elevation: 0,
-                  height: 60,
-                  paddingBottom: 8,
+                  height: 60 + (Platform.OS === 'android' ? 10 : 0) + insets.bottom,
+                  paddingBottom: insets.bottom + 8,
                   paddingTop: 8,
               },
-              tabBarActiveTintColor: Platform.OS === 'ios' ? COLORS.light.primary : 'black', 
+              tabBarActiveTintColor: colorScheme === 'dark' ? 'white' : 'black',
               tabBarInactiveTintColor: '#9ca3af',
               tabBarShowLabel: false,
           }}
@@ -110,10 +50,10 @@ export default function TabLayout() {
         />
 
         <Tabs.Screen
-          name="budget"
+          name="split-bill"
           options={{
-            title: 'Budget', 
-            tabBarIcon: ({ color }) => <Icon name="banknote" size={26} color={color} />,
+            title: 'Split Bill', 
+            tabBarIcon: ({ color }) => <Icon name="scroll" size={26} color={color} />,
           }}
         />
 
@@ -126,34 +66,6 @@ export default function TabLayout() {
         />
 
       </Tabs>
-
-      {/* Floating Action Button (Bottom Right) */}
-      <View className="absolute bottom-20 right-4" pointerEvents="box-none">
-          <Pressable 
-            onPress={handleFabPress}
-            className="w-14 h-14 rounded-full bg-black dark:bg-white items-center justify-center active:scale-95"
-          >
-              <Icon name="plus" size={24} color={colorScheme === 'dark' ? 'black' : 'white'} />
-          </Pressable>
-      </View>
-
-      {/* Smart Text Modal */}
-      <SmartTextModal 
-        visible={smartTextVisible}
-        onClose={() => setSmartTextVisible(false)}
-      />
-
-      {/* OCR Modal */}
-      <OCRModal 
-        visible={ocrVisible}
-        onClose={() => setOCRVisible(false)}
-      />
-
-      {/* Split Bill Modal */}
-      <SplitBillModal 
-        visible={splitBillVisible}
-        onClose={() => setSplitBillVisible(false)}
-      />
     </View>
   );
 }

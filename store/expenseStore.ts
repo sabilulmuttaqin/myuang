@@ -24,10 +24,29 @@ export type Transaction = {
   category_color?: string; // Joined field
 };
 
+export type SplitBillMember = {
+  id: number;
+  split_bill_id: number;
+  name: string;
+  share_amount: number;
+  is_me: boolean;
+};
+
+export type SplitBill = {
+  id: number;
+  date: string;
+  name: string;
+  total_amount: number;
+  image_uri?: string;
+  created_at?: number;
+  members?: SplitBillMember[]; // For UI convenience
+};
+
 interface ExpenseState {
   transactions: Transaction[];
   categories: Category[];
-  totalMonth: number;
+  splitBills: SplitBill[]; // New
+  totalMonth: number; 
   totalWeek: number;
   isLoading: boolean;
   
@@ -35,16 +54,22 @@ interface ExpenseState {
   addExpense: (db: SQLiteDatabase, transaction: Omit<Transaction, 'id' | 'created_at' | 'category_name' | 'category_icon' | 'category_color'>) => Promise<void>;
   addCategory: (db: SQLiteDatabase, category: Omit<Category, 'id'>) => Promise<void>;
   fetchRecentTransactions: (db: SQLiteDatabase) => Promise<void>;
-  calculateTotalMonth: (db: SQLiteDatabase) => Promise<void>;
-  calculateWeeklyTotal: (db: SQLiteDatabase) => Promise<void>;
+  calculateTotalMonth: (db: SQLiteDatabase, selectedMonth?: Date) => Promise<void>;
+  calculateWeeklyTotal: (db: SQLiteDatabase, selectedMonth?: Date) => Promise<void>;
   updateCategory: (db: SQLiteDatabase, id: number, category: Partial<Category>) => Promise<void>;
   deleteCategory: (db: SQLiteDatabase, id: number) => Promise<void>;
   deleteTransaction: (db: SQLiteDatabase, id: number) => Promise<void>;
+  
+  // Split Bill Actions
+  fetchSplitBills: (db: SQLiteDatabase) => Promise<void>;
+  addSplitBill: (db: SQLiteDatabase, bill: Omit<SplitBill, 'id' | 'created_at' | 'members'>, members: Omit<SplitBillMember, 'id' | 'split_bill_id'>[]) => Promise<void>;
+  deleteSplitBill: (db: SQLiteDatabase, id: number) => Promise<void>;
 }
 
 export const useExpenseStore = create<ExpenseState>((set, get) => ({
   transactions: [],
   categories: [],
+  splitBills: [],
   totalMonth: 0,
   totalWeek: 0,
   isLoading: false,
@@ -80,6 +105,7 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
       // Refresh list
       await get().fetchRecentTransactions(db);
       await get().calculateTotalMonth(db);
+      await get().calculateWeeklyTotal(db);
     } catch (error) {
       console.error('Error adding expense:', error);
     } finally {
@@ -102,22 +128,26 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     }
   },
 
-  calculateTotalMonth: async (db) => {
+  calculateTotalMonth: async (db, selectedMonth) => {
     try {
+        // Use selectedMonth or default to current date
+        const targetDate = selectedMonth || new Date();
+        const yearMonth = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+        
         // 1. Total Month
         const totalResult = await db.getFirstAsync<{ total: number }>(`
             SELECT SUM(amount) as total 
             FROM transactions 
-            WHERE strftime('%Y-%m', date) = strftime('%Y-%m', 'now')
-        `);
+            WHERE strftime('%Y-%m', date) = ?
+        `, [yearMonth]);
         
         // 2. Breakdown per Category for key 'percentage' and 'total'
         const breakdownResult = await db.getAllAsync<{ category_id: number; total: number }>(`
             SELECT category_id, SUM(amount) as total
             FROM transactions
-            WHERE strftime('%Y-%m', date) = strftime('%Y-%m', 'now')
+            WHERE strftime('%Y-%m', date) = ?
             GROUP BY category_id
-        `);
+        `, [yearMonth]);
 
         // Map breakdown to categories
         const categories = get().categories;
@@ -139,20 +169,20 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     }
   },
 
-  calculateWeeklyTotal: async (db) => {
+  calculateWeeklyTotal: async (db, selectedMonth) => {
     try {
-        // Calculate start of the week (Monday)
-        const now = new Date();
-        const day = now.getDay(); // 0 (Sun) - 6 (Sat)
-        const diff = now.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
-        const monday = new Date(now.setDate(diff));
-        monday.setHours(0, 0, 0, 0);
+        // Use selectedMonth or default to current date  
+        const targetDate = selectedMonth || new Date();
+        const yearMonth = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
         
+        // Calculate total for the last 7 days within the selected month
+        // For a selected month, we show the total for that entire month instead of "weekly"
+        // This makes more sense when viewing historical months
         const result = await db.getFirstAsync<{ total: number }>(`
             SELECT SUM(amount) as total 
             FROM transactions 
-            WHERE date >= ?
-        `, [monday.toISOString()]);
+            WHERE strftime('%Y-%m', date) = ?
+        `, [yearMonth]);
         
         set({ totalWeek: result?.total || 0 });
     } catch (error) {
@@ -195,6 +225,49 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
       await get().calculateWeeklyTotal(db);
     } catch (error) {
       console.error('Error deleting transaction:', error);
+    }
+  },
+
+  fetchSplitBills: async (db) => {
+    try {
+      const bills = await db.getAllAsync<SplitBill>('SELECT * FROM split_bills ORDER BY date DESC, id DESC');
+      // Fetch members for each bill? 
+      // For list view, we might not need members immediately, or we can fetch them.
+      // Let's simpler: fetch members when needed or now. 
+      // For simplicity, let's just fetch bills.
+      set({ splitBills: bills });
+    } catch (error) {
+      console.error('Error fetching split bills:', error);
+    }
+  },
+
+  addSplitBill: async (db, bill, members) => {
+    try {
+      const result = await db.runAsync(
+          'INSERT INTO split_bills (name, date, total_amount, image_uri) VALUES (?, ?, ?, ?)',
+          [bill.name, bill.date, bill.total_amount, bill.image_uri ?? null]
+      );
+      const billId = result.lastInsertRowId;
+      
+      for (const member of members) {
+          await db.runAsync(
+              'INSERT INTO split_bill_members (split_bill_id, name, share_amount, is_me) VALUES (?, ?, ?, ?)',
+              [billId, member.name, member.share_amount, member.is_me ? 1 : 0]
+          );
+      }
+      
+      await get().fetchSplitBills(db);
+    } catch (error) {
+      console.error('Error adding split bill:', error);
+    }
+  },
+
+  deleteSplitBill: async (db, id) => {
+    try {
+      await db.runAsync('DELETE FROM split_bills WHERE id = ?', [id]);
+      await get().fetchSplitBills(db);
+    } catch (error) {
+       console.error('Error deleting split bill:', error);
     }
   },
 }));

@@ -1,7 +1,7 @@
 import { type SQLiteDatabase } from 'expo-sqlite';
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-  const DATABASE_VERSION = 3;
+  const DATABASE_VERSION = 4;
   // Get current version
   let { user_version: currentDbVersion } = await db.getFirstAsync<{ user_version: number }>(
     'PRAGMA user_version'
@@ -94,6 +94,29 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
         `UPDATE categories SET icon = 'emoji:🎬' WHERE name = 'Hiburan'`
       );
     }
+  }
+
+  // Split Bill Migration (v3 -> v4)
+  if (currentDbVersion < 4) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS split_bills (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        name TEXT NOT NULL,
+        total_amount REAL DEFAULT 0,
+        image_uri TEXT,
+        created_at INTEGER DEFAULT (strftime('%s', 'now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS split_bill_members (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        split_bill_id INTEGER,
+        name TEXT NOT NULL,
+        share_amount REAL DEFAULT 0,
+        is_me BOOLEAN DEFAULT 0,
+        FOREIGN KEY (split_bill_id) REFERENCES split_bills (id) ON DELETE CASCADE
+      );
+    `);
   }
 
   // Update version

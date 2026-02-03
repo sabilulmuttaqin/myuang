@@ -96,7 +96,7 @@ export function CategoryFormModal({ visible, onClose, onSave, onDelete, initialD
                                 value={icon}
                                 onChangeText={handleIconChange}
                                 placeholderTextColor="#9CA3AF"
-                                className="text-5xl text-center w-full"
+                                className="text-5xl text-center w-full text-black dark:text-white"
                                 style={{ textAlign: 'center' }}
                                 maxLength={2}
                                 autoFocus={mode === 'add'}
@@ -116,7 +116,8 @@ export function CategoryFormModal({ visible, onClose, onSave, onDelete, initialD
                             value={name}
                             onChangeText={setName}
                             placeholder="e.g., Food, Travel"
-                            className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl px-5 py-4 text-lg font-medium"
+                            placeholderTextColor="#9CA3AF"
+                            className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl px-5 py-4 text-lg font-medium text-black dark:text-white"
                         />
                     </View>
 

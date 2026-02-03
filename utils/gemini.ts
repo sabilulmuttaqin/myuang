@@ -1,6 +1,8 @@
+// @ts-ignore
+import * as FileSystem from 'expo-file-system/legacy';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const API_KEY = 'AIzaSyBcxiBGk-Jj3XF2qrUCdkz4qEeTfvjYaTU';
+const API_KEY = 'AIzaSyCCFVQ-AidWexrJZChRLeC1c3Iamh1TWVo';
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 export interface ParsedExpense {
@@ -9,95 +11,72 @@ export interface ParsedExpense {
   amount: number;
 }
 
-export async function parseExpenseText(input: string, availableCategories: string[]): Promise<ParsedExpense | null> {
+export async function parseExpenseText(text: string, availableCategories: string[]): Promise<ParsedExpense | null> {
+  // ... (keep same)
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
     const categoriesStr = availableCategories.join(', ');
     
-    const prompt = `Parse this expense text into JSON format.
-
-Text: "${input}"
-
-Return ONLY valid JSON in this exact format (no markdown, no explanation):
-{"name": "item name", "category": "category", "amount": number}
-
-Available categories: ${categoriesStr}
-
-Examples:
-Input: "Nasi goreng 15rb" → {"name":"Nasi Goreng","category":"Makan","amount":15000}
-Input: "Bensin 50ribu" → {"name":"Bensin","category":"Transport","amount":50000}
-Input: "Kopi 12k" → {"name":"Kopi","category":"Makan","amount":12000}
-
-IMPORTANT: Use ONLY categories from the available list above.`;
+    const prompt = `Analisis teks pengeluaran ini: "${text}".
+    Extract informasi pengeluaran menjadi JSON dengan format: { "name": "nama item", "category": "kategori", "amount": angka }
+    
+    Kategori yang tersedia: ${categoriesStr}
+    
+    Rules:
+    - amount harus angka (contoh: 15000)
+    - Gunakan kategori yang paling sesuai
+    - Jika tidak ada kategori yang pas, gunakan "Lainnya"
+    - Return hanya JSON valid, tanpa markdown.`;
 
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const responseText = result.response.text();
     
-    console.log('Gemini response:', text);
+    // Extract JSON
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
     
-    // Try to extract JSON - be more lenient
-    let jsonMatch = text.match(/\{[^}]+\}/);
-    if (!jsonMatch) {
-      // Try to find JSON with nested objects
-      jsonMatch = text.match(/\{[\s\S]*?\}/);
-    }
+    const parsed = JSON.parse(jsonMatch[0]);
     
-    if (!jsonMatch) {
-      console.error('No JSON found in response:', text);
-      throw new Error('Tidak bisa menemukan data JSON dari response');
-    }
-
-    const parsed: ParsedExpense = JSON.parse(jsonMatch[0]);
-    
-    // Validate
-    if (!parsed.name || !parsed.amount || parsed.amount <= 0) {
-      throw new Error('Data tidak lengkap atau invalid');
-    }
-
-    // Normalize category - check if it exists in available categories
+    // Normalize category
     if (!availableCategories.includes(parsed.category)) {
-      // Try to find closest match (case insensitive)
-      const matchedCategory = availableCategories.find(c => 
-        c.toLowerCase() === parsed.category.toLowerCase()
-      );
-      if (matchedCategory) {
-        parsed.category = matchedCategory;
-      } else {
-        // Use first category as fallback
-        parsed.category = availableCategories[0] || 'Lainnya';
-      }
+        const match = availableCategories.find(c => c.toLowerCase() === parsed.category.toLowerCase());
+        parsed.category = match || availableCategories[0] || 'Lainnya';
     }
-
-    return parsed;
+    
+    return {
+        name: parsed.name,
+        category: parsed.category,
+        amount: Number(parsed.amount)
+    };
   } catch (error) {
-    console.error('Error parsing expense text:', error);
+    console.error('Error parsing text:', error);
     return null;
   }
 }
 
-export async function parseExpenseImage(imageUri: string, availableCategories: string[], splitItems: boolean = true): Promise<ParsedExpense[] | null> {
+export async function parseExpenseImage(imageUri: string, availableCategories: string[], splitItems: boolean = true, base64Data?: string | null): Promise<ParsedExpense[] | null> {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-    // Read image as base64
-    const response = await fetch(imageUri);
-    const blob = await response.blob();
-    const base64data = await new Promise<string>((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        // Remove data:image/jpeg;base64, prefix
-        resolve(base64.split(',')[1]);
-      };
-      reader.readAsDataURL(blob);
-    });
+    let finalBase64 = base64Data;
+    
+    if (!finalBase64) {
+        console.log('No base64 provided, attempting FileSystem read...');
+        try {
+            finalBase64 = await FileSystem.readAsStringAsync(imageUri, {
+                encoding: 'base64',
+            });
+        } catch (e) {
+            console.error('FileSystem read failed:', e);
+            throw new Error('Failed to read image file. Please ensure Base64 is passed.');
+        }
+    }
 
     const categoriesStr = availableCategories.join(', ');
 
     const prompt = splitItems 
       ? `Kamu adalah asisten untuk aplikasi pencatat pengeluaran. Analisis gambar struk/nota/kwitansi ini dan extract SEMUA item pengeluaran.
+// ... rest of prompt same ...
 
 Parse menjadi JSON ARRAY dengan format: [
   { "name": "nama item", "category": "kategori", "amount": angka },
@@ -134,7 +113,7 @@ PENTING: Hanya return JSON saja, tanpa penjelasan tambahan.`;
 
     const imagePart = {
       inlineData: {
-        data: base64data,
+        data: finalBase64 as string,
         mimeType: 'image/jpeg',
       },
     };

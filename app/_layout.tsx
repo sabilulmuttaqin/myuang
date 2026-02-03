@@ -89,7 +89,7 @@ export default function RootLayout() {
 
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {
-      await SplashScreen.hideAsync();
+      // safe to do nothing or handle other layout logic
     }
   }, [appIsReady]);
 
@@ -101,7 +101,12 @@ export default function RootLayout() {
 
   if (!appIsReady) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#00D9A3]">
+      <View 
+        className="flex-1 items-center justify-center bg-white"
+        onLayout={async () => {
+          await SplashScreen.hideAsync();
+        }}
+      >
         <Animated.Image 
           source={require('../assets/icon.png')} 
           style={{ 
@@ -115,8 +120,8 @@ export default function RootLayout() {
           }}
           resizeMode="contain"
         />
-        <ActivityIndicator size="large" color="#ffffff" className="mb-4" />
-        <Text className="text-white text-lg font-bold">Tunggu yaa...</Text>
+        <ActivityIndicator size="large" color="#000000" className="mb-4" />
+        <Text className="text-black text-lg font-bold">Tunggu ya...</Text>
       </View>
     );
   }
