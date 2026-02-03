@@ -1,4 +1,4 @@
-import { View, FlatList, Pressable, Alert } from 'react-native';
+import { View, FlatList, Pressable, Alert, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/nativewindui/Text';
 import { useExpenseStore, Transaction } from '@/store/expenseStore';
@@ -46,14 +46,15 @@ export default function AnalysisScreen() {
   }, [filteredData]);
 
   const categoryBreakdown = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { total: number; icon: string }>();
     filteredData.forEach(t => {
       const name = t.category_name || 'Uncategorized';
-      const current = map.get(name) || 0;
-      map.set(name, current + t.amount);
+      const icon = t.category_icon || '';
+      const current = map.get(name) || { total: 0, icon };
+      map.set(name, { total: current.total + t.amount, icon: current.icon || icon });
     });
     return Array.from(map.entries())
-      .map(([name, total]) => ({ name, total }))
+      .map(([name, data]) => ({ name, total: data.total, icon: data.icon }))
       .sort((a, b) => b.total - a.total);
   }, [filteredData]);
 
@@ -115,27 +116,33 @@ export default function AnalysisScreen() {
       {/* Total */}
 
 
-      {/* Breakdown List */}
+      {/* Breakdown Cards */}
       <View className="mb-6">
         <Text variant="title3" className="font-bold mb-4">Breakdown</Text>
-        {categoryBreakdown.map((item) => (
-          <View key={item.name} className="mb-6">
-            <View className="flex-row justify-between mb-2 items-end">
-              <Text className="font-bold text-lg">{item.name}</Text>
-              <View className="items-end">
-                <Text className="font-bold text-lg">Rp {item.total.toLocaleString('id-ID')}</Text>
-                <Text className="text-gray-400 text-xs">{((item.total / (totalFiltered || 1)) * 100).toFixed(1)}%</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row -mx-5 px-5" contentContainerStyle={{ paddingRight: 20 }}>
+          {categoryBreakdown.map((item) => (
+            <View 
+              key={item.name} 
+              className="w-28 h-36 p-3 rounded-[24px] flex-col items-center justify-between bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm mr-3"
+            >
+              {/* Emoji - smaller */}
+              <View className="flex-1 items-center justify-center">
+                {item.icon?.startsWith('emoji:') ? (
+                  <Text className="text-3xl">{item.icon.replace('emoji:', '')}</Text>
+                ) : (
+                  <Icon name="circle.fill" size={28} color="gray" />
+                )}
+              </View>
+              
+              {/* Info at bottom - better hierarchy */}
+              <View className="w-full items-center">
+                <Text className="text-gray-500 dark:text-gray-400 text-[11px] mb-0.5" numberOfLines={1}>{item.name}</Text>
+                <Text className="text-gray-900 dark:text-white text-base font-bold">Rp {(item.total / 1000).toFixed(0)}k</Text>
+                <Text className="text-gray-400 text-[10px]">{((item.total / (totalFiltered || 1)) * 100).toFixed(0)}%</Text>
               </View>
             </View>
-            {/* Progress Bar */}
-            <View className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-              <View 
-                className="h-full bg-black dark:bg-white rounded-full" 
-                style={{ width: `${(item.total / (totalFiltered || 1)) * 100}%` }} 
-              />
-            </View>
-          </View>
-        ))}
+          ))}
+        </ScrollView>
         {categoryBreakdown.length === 0 && (
           <Text className="text-gray-400 text-center py-10">No expenses found for this period.</Text>
         )}

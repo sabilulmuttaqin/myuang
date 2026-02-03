@@ -291,7 +291,7 @@ export default function SettingsScreen() {
       </View>
 
       <View className="items-center mt-auto mb-10">
-        <Text className="text-gray-400 text-sm">MyUang v1.0.0</Text>
+        <Text className="text-gray-400 text-sm">MyUang v2.0.0</Text>
       </View>
     </ScrollView>
 
