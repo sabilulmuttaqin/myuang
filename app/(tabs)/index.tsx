@@ -204,9 +204,9 @@ export default function Dashboard() {
              </View>
           )}
           renderItem={({ item }: { item: Transaction }) => (
-            <View className="px-5 py-2 flex-row items-center gap-4 bg-background mx-5 mb-3 rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-800">
+            <View className="px-5 py-4 flex-row items-center gap-4 bg-white dark:bg-gray-900 mx-5 mb-3 rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-800">
               <View 
-                className="w-12 h-12 rounded-full items-center justify-center bg-gray-50 dark:bg-gray-900"
+                className="w-12 h-12 rounded-full items-center justify-center bg-gray-50 dark:bg-gray-800"
               >
                   {item.category_icon?.startsWith('emoji:') ? (
                       <Text className="text-xl">{item.category_icon.replace('emoji:', '')}</Text>

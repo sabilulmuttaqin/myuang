@@ -206,9 +206,11 @@ export default function SettingsScreen() {
       <View className="mb-8">
         <View className="flex-row justify-between items-center mb-4 ml-2">
           <Text variant="title3" className="font-semibold">Reminders</Text>
-          <Pressable onPress={addReminderTime} className="flex-row items-center gap-1">
-            <Icon name="plus.circle.fill" size={20} color={colorScheme === 'dark' ? 'white' : 'black'} />
-            <Text className="font-medium text-sm">Add</Text>
+          <Pressable 
+            onPress={addReminderTime} 
+            className="bg-black dark:bg-white px-4 py-2 rounded-full"
+          >
+            <Text className="font-medium text-sm text-white dark:text-black">Add</Text>
           </Pressable>
         </View>
         

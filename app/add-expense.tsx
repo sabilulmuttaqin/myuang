@@ -94,13 +94,13 @@ export default function AddExpenseScreen() {
                  <Text className="text-gray-400 text-lg">IDR</Text>
             </View>
             <TextInput
-              className="text-6xl font-bold text-center w-full text-black dark:text-white"
-              style={{ textAlign: 'center' }}
+              className="text-6xl font-bold text-center text-black dark:text-white"
               keyboardType="numeric"
               value={amount}
               onChangeText={setAmount}
               placeholder="0"
               placeholderTextColor="#9CA3AF"
+              textAlign="center"
             />
         </View>
 

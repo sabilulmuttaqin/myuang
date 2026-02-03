@@ -81,7 +81,7 @@ export default function AnalysisScreen() {
     >
       {/* Emoji Circle */}
       <View className="w-12 h-12 rounded-full items-center justify-center bg-gray-50 dark:bg-gray-800">
-        {item.category_icon?.replace('emoji:', '') ? (
+        {item.category_icon?.startsWith('emoji:') ? (
           <Text className="text-xl">{item.category_icon.replace('emoji:', '')}</Text>
         ) : (
           <Icon name="circle.fill" size={24} color="gray" />
@@ -113,11 +113,7 @@ export default function AnalysisScreen() {
   const ListHeader = useMemo(() => (
     <View className="px-5 pt-5 pb-2">
       {/* Total */}
-      <View className="bg-black dark:bg-gray-900 rounded-2xl p-4 mb-6 border border-gray-800">
-        <Text className="text-gray-400 text-xs mb-1">Total Periode Ini</Text>
-        <Text className="text-white text-2xl font-bold">Rp {totalFiltered.toLocaleString('id-ID')}</Text>
-        <Text className="text-gray-500 text-xs mt-1">{filteredData.length} transaksi</Text>
-      </View>
+
 
       {/* Breakdown List */}
       <View className="mb-6">
@@ -156,28 +152,24 @@ export default function AnalysisScreen() {
       <View className="px-4 py-4 border-b dark:border-gray-800 border-gray-200 bg-background z-10">
         <Text className="text-2xl font-bold mb-4">Analytic</Text>
         
-        {/* Date Range Picker */}
-        <View className="flex-row gap-3">
+        {/* Date Range Picker - Pill Style */}
+        <View className="flex-row items-center justify-center gap-3">
           <Pressable 
             onPress={() => setShowStartPicker(true)}
-            className="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 flex-row items-center"
+            className="flex-row items-center bg-white dark:bg-gray-800 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700"
           >
             <Icon name="calendar" size={16} color={colorScheme === 'dark' ? 'white' : 'black'} />
-            <View className="ml-3">
-              <Text className="text-gray-400 text-xs">Dari</Text>
-              <Text className="font-semibold">{format(startDate, 'dd MMM yyyy', { locale: id })}</Text>
-            </View>
+            <Text className="ml-2 font-medium">{format(startDate, 'dd MMM yyyy', { locale: id })}</Text>
           </Pressable>
+
+          <Text className="text-gray-400">—</Text>
 
           <Pressable 
             onPress={() => setShowEndPicker(true)}
-            className="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 flex-row items-center"
+            className="flex-row items-center bg-white dark:bg-gray-800 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700"
           >
             <Icon name="calendar" size={16} color={colorScheme === 'dark' ? 'white' : 'black'} />
-            <View className="ml-3">
-              <Text className="text-gray-400 text-xs">Sampai</Text>
-              <Text className="font-semibold">{format(endDate, 'dd MMM yyyy', { locale: id })}</Text>
-            </View>
+            <Text className="ml-2 font-medium">{format(endDate, 'dd MMM yyyy', { locale: id })}</Text>
           </Pressable>
         </View>
       </View>
@@ -200,7 +192,7 @@ export default function AnalysisScreen() {
         <DateTimePicker
           value={startDate}
           mode="date"
-          display="default"
+          display="spinner"
           onChange={(event, date) => {
             setShowStartPicker(false);
             if (date) setStartDate(date);
@@ -212,7 +204,7 @@ export default function AnalysisScreen() {
         <DateTimePicker
           value={endDate}
           mode="date"
-          display="default"
+          display="spinner"
           onChange={(event, date) => {
             setShowEndPicker(false);
             if (date) setEndDate(date);
