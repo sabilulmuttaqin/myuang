@@ -7,7 +7,7 @@
 - **📊 Insightful Analysis**: Visualize your spending habits with weekly and monthly breakdowns, filtered by categories.
 - **📶 Offline-First**: Works perfectly without an internet connection. AI features gracefully disable when offline.
 - **🌗 Dark Mode**: Sleek, battery-friendly dark theme by default.
-- **🔔 Custom Reminders**: Never forget to track! Get notified at 8 PM if you haven't logged any expenses for the day.
+- **🔔 Custom Reminders**: Choose your own reminder time so you never forget to track expenses.
 - **💸 Split Bill**: Easily calculate and track your share of shared expenses.
 - **🎤 Voice Recognizer**: Record expenses hands-free using voice input.
 ## 🛠 Tech Stack
